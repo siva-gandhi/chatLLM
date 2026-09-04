@@ -26,13 +26,13 @@ public class MainController {
         if(!EnumUtils.isValidEnumIgnoreCase(Constants.ModelProvider.class,chatRequest.modelProvider()))
             throw new InvalidModelProviderException(chatRequest.modelProvider());
 
-        return chatService.chat(chatRequest.message(), chatRequest.modelProvider(),sessionId);
+        return chatService.chat(chatRequest.message(), chatRequest.modelProvider(),chatRequest.model(),sessionId);
     }
 
     @PostMapping(value = "/chatStream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> chatStream(@RequestBody ChatRequest chatRequest
             , @RequestHeader(value = "X-Session-ID", defaultValue = "default-session") String sessionId){
-        return chatService.chatStream(chatRequest.message(), chatRequest.modelProvider(),sessionId);
+        return chatService.chatStream(chatRequest.message(), chatRequest.modelProvider(),chatRequest.model(),sessionId);
     }
 
     @ExceptionHandler(InvalidModelProviderException.class)
