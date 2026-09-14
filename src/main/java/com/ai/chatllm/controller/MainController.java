@@ -25,7 +25,6 @@ public class MainController {
             , @RequestHeader(value = "X-Session-ID", defaultValue = "default-session") String sessionId) throws InvalidModelProviderException {
         if(!EnumUtils.isValidEnumIgnoreCase(Constants.ModelProvider.class,chatRequest.modelProvider()))
             throw new InvalidModelProviderException(chatRequest.modelProvider());
-
         return chatService.chat(chatRequest.message(), chatRequest.modelProvider(),chatRequest.model(),sessionId);
     }
 

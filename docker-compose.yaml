@@ -1,0 +1,35 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ~/.ollama:/root/.ollama
+    networks:
+      - app_network
+  llm-backend:
+    build:
+      context: .
+      dockerfile: dockerfile.backend
+    image: llm-backend:latest
+    pull_policy: never
+    container_name: llm-backend
+    ports:
+      - "8765:8080"
+    networks:
+      - app_network
+  llm-frontend:
+    build:
+      context: .
+      dockerfile: dockerfile.frontend
+    image: llm-frontend:latest
+    pull_policy: never
+    container_name: llm-frontend
+    ports:
+      - "8642:8501"
+    networks:
+      - app_network
+networks:
+  app_network:
+    driver: bridge
