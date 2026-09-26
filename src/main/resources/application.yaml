@@ -2,6 +2,12 @@ spring:
   application:
     name: chatLLM
   ai:
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1536
+        initialize-schema: true
     chat:
       client:
         enabled: false
@@ -10,6 +16,9 @@ spring:
       chat:
         options:
           model: gpt-4.1-nano
+      embedding:
+        options:
+          model: text-embedding-3-small
     google:
       genai:
         api-key: ${GOOGLE_API_KEY}
@@ -21,3 +30,7 @@ spring:
       chat:
         options:
           model: gemma2:2b
+  datasource:
+    url: jdbc:postgresql://pg_vector:5432/vector_db
+    username: user
+    password: password

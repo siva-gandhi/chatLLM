@@ -3,7 +3,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY app.py .
-RUN groupadd -r myapp && useradd -r -g myapp myapp
+RUN groupadd -r myapp && useradd -r -g myapp myapp && \
+    mkdir -p /home/myapp && chown -R myapp:myapp /app /home/myapp
 USER myapp:myapp
 EXPOSE 8501
 CMD ["streamlit", "run", "app.py", "--server.port=8501"]

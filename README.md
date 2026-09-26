@@ -6,6 +6,10 @@ API Endpoints
 
 **/api/v1/chatStream** - For LLM Stream Response
 
+**/api/v1/uploadFile** - To upload a document
+
+**/api/v1/deleteFile** - To delete a document
+
 Available Model Providers
 -
 1. OPENAI
