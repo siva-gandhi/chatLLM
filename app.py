@@ -3,6 +3,10 @@ import uuid
 import requests
 import logging
 from datetime import datetime
+import redis
+import json
+
+r = redis.Redis(host='redis', port=6379, decode_responses=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,7 +19,7 @@ API_URL = "http://llm-backend:8080/api/v1/chatStream"
 FILE_UPLOAD_URL = "http://llm-backend:8080/api/v1/uploadFile"
 FILE_DELETE_URL = "http://llm-backend:8080/api/v1/deleteFile"
 
-st.set_page_config(page_title="LLM Chat App", page_icon="💬", layout="wide")
+st.set_page_config(page_title="AI Assistant", page_icon="💬", layout="wide")
 
 providers = {
     "gemini": "Google Gemini",
@@ -48,14 +52,15 @@ def save_current_chat_to_history():
         first_user_msg = next((m["content"] for m in st.session_state.messages if m["role"] == "user"), "Conversation")
         title = (first_user_msg[:32] + "...") if len(first_user_msg) > 32 else first_user_msg
 
-        st.session_state.past_chats[st.session_state.session_id] = {
+        chat_history = {
             "id": st.session_state.session_id,
             "title": title,
             "messages": list(st.session_state.messages),
             "timestamp": datetime.now().strftime("%b %d, %H:%M"),
             "provider" : st.session_state.selected_provider
         }
-
+        st.session_state.past_chats[st.session_state.session_id] = chat_history
+        r.hset("chat_history",st.session_state.session_id,json.dumps(chat_history))
 
 def session_reset():
     """Archives current context, cleans backend files, and initializes a new session."""
@@ -68,7 +73,6 @@ def session_reset():
     st.session_state.session_id = str(uuid.uuid4())
     st.session_state.uploaded_files = set()
     handle_file_change()
-    st.toast("Saved previous chat and reset session.", icon="💾")
 
 def load_chat(target_session_id: str):
     """Saves current state and switches to an archived session."""
@@ -81,6 +85,17 @@ def load_chat(target_session_id: str):
         st.session_state.uploaded_files = set()
         st.session_state.selected_provider = target_chat["provider"]
 
+def fetch_past_chats():
+    raw_chats = r.hgetall("chat_history")
+    past_chats = {session_id: json.loads(data) for session_id, data in raw_chats.items()}
+    for session_id in past_chats.keys()-st.session_state.past_chats.keys():
+        st.session_state.past_chats[session_id] = past_chats[session_id]
+
+def delete_chat(session_id=None):
+    if session_id is None:
+        r.delete("chat_history")
+    else:
+        r.hdel("chat_history",session_id)
 
 # --- Backend API Handlers ---
 def upload_file_to_backend(file, session_id: str):
@@ -146,10 +161,10 @@ with st.sidebar:
     st.subheader("Past Conversations")
 
     if not st.session_state.past_chats:
-        st.caption("No archived conversations yet. When you reset or switch sessions, chats will appear here.")
+        st.caption("No conversations yet")
     else:
         # Display sessions in reverse chronological order
-        for sid, chat in reversed(list(st.session_state.past_chats.items())):
+        for sid, chat in sorted(st.session_state.past_chats.items(),key=lambda item: item[1].get("timestamp", 0),reverse=True):
             is_active = (sid == st.session_state.session_id)
             col_chat, col_del = st.columns([0.82, 0.18])
 
@@ -167,16 +182,21 @@ with st.sidebar:
             with col_del:
                 if st.button("🗑️", key=f"del_{sid}", help="Delete this archived chat"):
                     del st.session_state.past_chats[sid]
+                    delete_chat(sid)
                     st.rerun()
 
         st.divider()
         if st.button("Clear All History", use_container_width=True):
             st.session_state.past_chats.clear()
+            delete_chat()
             st.rerun()
+    if st.button("Load Past Chats", use_container_width=True):
+        fetch_past_chats()
+        st.rerun()
 
 
 # --- Main Chat UI ---
-st.title("LLM Chat")
+st.title("AI Assistant")
 
 chat_container = st.container()
 

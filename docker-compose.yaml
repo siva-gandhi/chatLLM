@@ -8,6 +8,28 @@ services:
       - ~/.ollama:/root/.ollama
     networks:
       - app_network
+  pg-vector:
+    image: pgvector/pgvector:pg16
+    container_name: pg_vector
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: vector_db
+    ports:
+      - "5432:5432"
+    networks:
+      - app_network
+  redis:
+    image: redis:7.4-alpine
+    container_name: redis_cache
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - ~/.redis:/data
+    networks:
+      - app_network
   llm-backend:
     build:
       context: .
@@ -28,17 +50,6 @@ services:
     container_name: llm-frontend
     ports:
       - "8642:8501"
-    networks:
-      - app_network
-  pg-vector:
-    image: pgvector/pgvector:pg16
-    container_name: pg_vector
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: vector_db
-    ports:
-      - "5432:5432"
     networks:
       - app_network
 networks:
