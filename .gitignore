@@ -1,6 +1,5 @@
-/.gradle/
 /.idea/
-/build/
-/gradle/
-/src/main/resources/static/application.properties
+/ai-assistant-backend/target/
+/ai-assistant-backend/src/main/resources/static/application.properties
+/ai-assistant-frontend/.venv
 

@@ -1,6 +1,6 @@
 spring:
   application:
-    name: chatLLM
+    name: AI-Assistant
   ai:
     vectorstore:
       pgvector:

@@ -30,24 +30,22 @@ services:
       - ~/.redis:/data
     networks:
       - app_network
-  llm-backend:
+  ai-backend:
     build:
-      context: .
-      dockerfile: dockerfile.backend
-    image: llm-backend:latest
+      context: ./ai-assistant-backend
+    image: ai-backend:latest
     pull_policy: never
-    container_name: llm-backend
+    container_name: ai-backend
     ports:
       - "8765:8080"
     networks:
       - app_network
-  llm-frontend:
+  ai-frontend:
     build:
-      context: .
-      dockerfile: dockerfile.frontend
-    image: llm-frontend:latest
+      context: ./ai-assistant-frontend
+    image: ai-frontend:latest
     pull_policy: never
-    container_name: llm-frontend
+    container_name: ai-frontend
     ports:
       - "8642:8501"
     networks:

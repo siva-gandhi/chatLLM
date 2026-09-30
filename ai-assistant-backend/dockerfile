@@ -1,6 +1,7 @@
 FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /workspace
 COPY pom.xml .
+RUN mvn -B -ntp -DskipTests dependency:go-offline
 COPY src ./src
 RUN mvn -B -ntp -DskipTests package && \
     jar="$(find target -maxdepth 1 -type f -name '*.jar' ! -name '*.jar.original' -print -quit)" && \

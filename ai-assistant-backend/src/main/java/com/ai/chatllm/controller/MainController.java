@@ -5,6 +5,7 @@ import com.ai.chatllm.service.RagDocService;
 import com.ai.chatllm.service.ChatService;
 import com.ai.chatllm.util.Constants;
 import com.ai.chatllm.util.InvalidModelProviderException;
+import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,7 @@ public class MainController {
             , @RequestHeader(value = "X-Session-ID", defaultValue = "default-session") String sessionId) throws InvalidModelProviderException {
         if(!EnumUtils.isValidEnumIgnoreCase(Constants.ModelProvider.class,chatRequest.modelProvider()))
             throw new InvalidModelProviderException(chatRequest.modelProvider());
-        log.info("Message received for chat: {} for Provider : {} & Model : {} ",chatRequest.message(), chatRequest.modelProvider(), chatRequest.model());
+        log.info("\nSession\t\t: {}\nProvider\t: {}\nModel\t\t: {}\nMessage\t\t: {}",sessionId,StringUtils.capitalize(chatRequest.modelProvider()), StringUtils.capitalize(chatRequest.model()),chatRequest.message());
         return chatService.chat(chatRequest.message(), EnumUtils.getEnumIgnoreCase(Constants.ModelProvider.class,chatRequest.modelProvider()),chatRequest.model(),sessionId);
     }
 
@@ -41,7 +42,7 @@ public class MainController {
             , @RequestHeader(value = "X-Session-ID", defaultValue = "default-session") String sessionId) throws InvalidModelProviderException {
         if(!EnumUtils.isValidEnumIgnoreCase(Constants.ModelProvider.class,chatRequest.modelProvider()))
             throw new InvalidModelProviderException(chatRequest.modelProvider());
-        log.info("Message received : {} for Provider : {} & Model : {} ",chatRequest.message(), chatRequest.modelProvider(), chatRequest.model());
+        log.info("\nSESSION\t\t: {}\nPROVIDER\t: {}\nMODEL\t\t: {}\nMESSAGE\t\t: {}",sessionId,StringUtils.capitalize(chatRequest.modelProvider()), StringUtils.capitalize(chatRequest.model()),chatRequest.message());
         return chatService.chatStream(chatRequest.message(), EnumUtils.getEnumIgnoreCase(Constants.ModelProvider.class,chatRequest.modelProvider()),chatRequest.model(),sessionId);
     }
 

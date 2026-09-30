@@ -6,7 +6,18 @@ from datetime import datetime
 import redis
 import json
 
-r = redis.Redis(host='redis', port=6379, decode_responses=True)
+from config import (
+    REDIS_HOST,
+    REDIS_PORT,
+    CHAT_API_URL,
+    FILE_UPLOAD_URL,
+    FILE_DELETE_URL,
+    PAGE_CONFIG,
+    PROVIDERS,
+    MODELS
+)
+
+redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,23 +26,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-API_URL = "http://llm-backend:8080/api/v1/chatStream"
-FILE_UPLOAD_URL = "http://llm-backend:8080/api/v1/uploadFile"
-FILE_DELETE_URL = "http://llm-backend:8080/api/v1/deleteFile"
-
-st.set_page_config(page_title="AI Assistant", page_icon="💬", layout="wide")
-
-providers = {
-    "gemini": "Google Gemini",
-    "openai": "OpenAI ChatGPT",
-    "ollama": "Open-source Models"
-}
-
-models = {
-    "gemini": ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"],
-    "openai": ["gpt-4.1-nano", "gpt-4.1-mini", "gpt-5-nano", "gpt-5.6-luna", "gpt-5-mini", "gpt-5.6-terra"],
-    "ollama": ["gemma2:2b", "llama3.2:3B", "qwen3.5:0.8b", "phi4-mini:3.8B", "qwen2.5-coder:1.5b"]
-}
+st.set_page_config(**PAGE_CONFIG)
 
 # --- Session State Initialization ---
 if "messages" not in st.session_state:
@@ -48,19 +43,27 @@ if "past_chats" not in st.session_state:
 def save_current_chat_to_history():
     """Saves the active session messages into the past_chats archive."""
     if st.session_state.messages:
-        # Generate title from the first user prompt or fallback
-        first_user_msg = next((m["content"] for m in st.session_state.messages if m["role"] == "user"), "Conversation")
-        title = (first_user_msg[:32] + "...") if len(first_user_msg) > 32 else first_user_msg
-
-        chat_history = {
-            "id": st.session_state.session_id,
-            "title": title,
-            "messages": list(st.session_state.messages),
-            "timestamp": datetime.now().strftime("%b %d, %H:%M"),
-            "provider" : st.session_state.selected_provider
-        }
-        st.session_state.past_chats[st.session_state.session_id] = chat_history
-        r.hset("chat_history",st.session_state.session_id,json.dumps(chat_history))
+        if st.session_state.session_id in st.session_state.past_chats:
+            chat_history = st.session_state.past_chats[st.session_state.session_id]
+            if len(st.session_state.messages) == len(chat_history["messages"]):
+                return
+            chat_history.update({
+                "messages": list(st.session_state.messages),
+                "timestamp": datetime.now().strftime("%b %d, %H:%M:%S")
+            })
+        else:
+            first_user_msg = next((m["content"] for m in st.session_state.messages if m["role"] == "user"), "Conversation")
+            title = (first_user_msg[:32] + "...") if len(first_user_msg) > 32 else first_user_msg
+            provider = st.session_state.selected_provider
+            chat_history = {
+                "id": st.session_state.session_id,
+                "title": title,
+                "messages": list(st.session_state.messages),
+                "timestamp": datetime.now().strftime("%b %d, %H:%M:%S"),
+                "provider" : provider
+            }
+            st.session_state.past_chats[st.session_state.session_id] = chat_history
+        redis_client.hset("chat_history", st.session_state.session_id, json.dumps(chat_history))
 
 def session_reset():
     """Archives current context, cleans backend files, and initializes a new session."""
@@ -86,16 +89,17 @@ def load_chat(target_session_id: str):
         st.session_state.selected_provider = target_chat["provider"]
 
 def fetch_past_chats():
-    raw_chats = r.hgetall("chat_history")
-    past_chats = {session_id: json.loads(data) for session_id, data in raw_chats.items()}
+    raw_chats = redis_client.hgetall("chat_history")
+    chat_list = [json.loads(data) for data in raw_chats.values()]
+    past_chats = {chat_item["id"]: chat_item for chat_item in chat_list}
     for session_id in past_chats.keys()-st.session_state.past_chats.keys():
         st.session_state.past_chats[session_id] = past_chats[session_id]
 
 def delete_chat(session_id=None):
     if session_id is None:
-        r.delete("chat_history")
+        redis_client.delete("chat_history")
     else:
-        r.hdel("chat_history",session_id)
+        redis_client.hdel("chat_history", session_id)
 
 # --- Backend API Handlers ---
 def upload_file_to_backend(file, session_id: str):
@@ -123,7 +127,7 @@ def chat_stream(message: str, session_id: str):
     headers = {"X-Session-ID": session_id}
     payload = {"message": message, "modelProvider": st.session_state.selected_provider, "model": st.session_state.selected_model}
     try:
-        with requests.post(API_URL, json=payload, headers=headers, stream=True) as resp:
+        with requests.post(CHAT_API_URL, json=payload, headers=headers, stream=True) as resp:
             if resp.status_code != 200:
                 yield f"Backend Error ({resp.status_code}): {resp.text}"
                 return
@@ -174,7 +178,7 @@ with st.sidebar:
                     button_label,
                     key=f"load_{sid}",
                     use_container_width=True,
-                    help=f"Saved: {chat['timestamp']}"
+                    help=f"{chat['timestamp']}"[:-3]
                 ):
                     load_chat(sid)
                     st.rerun()
@@ -206,13 +210,13 @@ with chat_container:
             st.markdown(msg["content"])
 
 with st.bottom:
-    col_provider, col_model, col_file = st.columns([1.5, 1.5, 4], vertical_alignment="bottom")
+    col_provider, col_model, col_file = st.columns([1, 1, 3], vertical_alignment="bottom")
 
     with col_provider:
         st.selectbox(
             "Model Provider",
-            options=providers.keys(),
-            format_func=lambda x: providers[x],
+            options=PROVIDERS.keys(),
+            format_func=lambda x: PROVIDERS[x],
             label_visibility="collapsed",
             on_change=session_reset,
             key="selected_provider"
@@ -220,18 +224,19 @@ with st.bottom:
     with col_model:
         st.selectbox(
             "Model",
-            options=models[st.session_state.selected_provider],
+            options=MODELS[st.session_state.selected_provider],
             label_visibility="collapsed",
             key="selected_model"
         )
     with col_file:
-        st.file_uploader(
-            "Upload context file",
-            accept_multiple_files=True,
-            key="file_uploader_widget",
-            label_visibility="collapsed",
-            on_change=handle_file_change
-        )
+        with st.popover("📎 Attach Files", use_container_width=True):
+            st.file_uploader(
+                "Upload context file",
+                accept_multiple_files=True,
+                key="file_uploader_widget",
+                label_visibility="collapsed",
+                on_change=handle_file_change
+            )
     user_prompt = st.chat_input("Type your message here...")
 
 if user_prompt:

@@ -11,7 +11,7 @@
         <relativePath/>
     </parent>
     <groupId>com.ai</groupId>
-    <artifactId>ai-project</artifactId>
+    <artifactId>ai-assistant</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <properties>
         <java.version>25</java.version>
