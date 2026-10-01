@@ -1,6 +1,7 @@
 package com.ai.chatllm.model;
 
-import jakarta.annotation.Nullable;
+import com.ai.chatllm.util.Constants.ModelProvider;
+import jakarta.validation.constraints.NotNull;
 
-public record ChatRequest (String message, String modelProvider, @Nullable String model){}
+public record ChatRequest (@NotNull String message, @NotNull ModelProvider modelProvider, @NotNull String model){}
 

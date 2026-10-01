@@ -9,5 +9,6 @@ public class Constants {
     public static final String CHAT_MEMORY_RETRIEVE_SIZE = "chat_memory_retrieve_size";
     public static final String SESSION_ID = "session_id";
     public static final String FILE_ID = "file_id";
+    public static final String FILENAME = "filename";
 
 }

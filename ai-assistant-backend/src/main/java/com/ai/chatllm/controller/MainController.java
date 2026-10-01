@@ -3,23 +3,16 @@ package com.ai.chatllm.controller;
 import com.ai.chatllm.model.ChatRequest;
 import com.ai.chatllm.service.RagDocService;
 import com.ai.chatllm.service.ChatService;
-import com.ai.chatllm.util.Constants;
-import com.ai.chatllm.util.InvalidModelProviderException;
-import org.apache.commons.lang3.StringUtils;
-import org.jspecify.annotations.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
-import org.apache.commons.lang3.EnumUtils;
 
 @RestController
 @RequestMapping("/api/v1")
 public class MainController {
-    private static final Logger log = LoggerFactory.getLogger(MainController.class);
     private final ChatService chatService;
     private final RagDocService ragDocService;
 
@@ -29,46 +22,24 @@ public class MainController {
     }
 
     @PostMapping("/chat")
-    public String chatCompletion(@RequestBody ChatRequest chatRequest
-            , @RequestHeader(value = "X-Session-ID", defaultValue = "default-session") String sessionId) throws InvalidModelProviderException {
-        if(!EnumUtils.isValidEnumIgnoreCase(Constants.ModelProvider.class,chatRequest.modelProvider()))
-            throw new InvalidModelProviderException(chatRequest.modelProvider());
-        log.info("\nSession\t\t: {}\nProvider\t: {}\nModel\t\t: {}\nMessage\t\t: {}",sessionId,StringUtils.capitalize(chatRequest.modelProvider()), StringUtils.capitalize(chatRequest.model()),chatRequest.message());
-        return chatService.chat(chatRequest.message(), EnumUtils.getEnumIgnoreCase(Constants.ModelProvider.class,chatRequest.modelProvider()),chatRequest.model(),sessionId);
+    public String chatCompletion(@RequestBody ChatRequest chatRequest, @RequestHeader(value = "X-Session-ID") @NotNull String sessionId) {
+        return chatService.chat(chatRequest.message(), chatRequest.modelProvider(),chatRequest.model(),sessionId);
     }
 
     @PostMapping(value = "/chatStream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chatStream(@RequestBody ChatRequest chatRequest
-            , @RequestHeader(value = "X-Session-ID", defaultValue = "default-session") String sessionId) throws InvalidModelProviderException {
-        if(!EnumUtils.isValidEnumIgnoreCase(Constants.ModelProvider.class,chatRequest.modelProvider()))
-            throw new InvalidModelProviderException(chatRequest.modelProvider());
-        log.info("\nSESSION\t\t: {}\nPROVIDER\t: {}\nMODEL\t\t: {}\nMESSAGE\t\t: {}",sessionId,StringUtils.capitalize(chatRequest.modelProvider()), StringUtils.capitalize(chatRequest.model()),chatRequest.message());
-        return chatService.chatStream(chatRequest.message(), EnumUtils.getEnumIgnoreCase(Constants.ModelProvider.class,chatRequest.modelProvider()),chatRequest.model(),sessionId);
+    public Flux<String> chatStream(@RequestBody ChatRequest chatRequest, @RequestHeader(value = "X-Session-ID") @NotNull String sessionId) {
+        return chatService.chatStream(chatRequest.message(), chatRequest.modelProvider(),chatRequest.model(),sessionId);
     }
 
     @PostMapping("/uploadFile")
-    public ResponseEntity<String> uploadDocument(@RequestParam("file") MultipartFile file
-            , @RequestHeader(value = "X-Session-ID", defaultValue = "default-session") String sessionId
-            , @RequestHeader(value = "fileId") String fileId) {
-        if (file.isEmpty())
-            return ResponseEntity.badRequest().body("Please upload a valid file.");
-        try {
-            ragDocService.ingestFile(file,fileId,sessionId);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Failed to process file: " + e.getMessage());
-        }
-        return ResponseEntity.ok("File '" + file.getOriginalFilename() + "' ingested successfully!");
+    public void uploadDocument(@RequestParam("file") @NotEmpty MultipartFile file
+            , @RequestHeader(value = "X-Session-ID") @NotNull String sessionId, @RequestHeader(value = "fileId") @NotNull String fileId) {
+        ragDocService.ingestFile(file,fileId,sessionId);
     }
 
     @DeleteMapping("/deleteFile")
-    public ResponseEntity<String> deleteDocument(@RequestHeader(value = "X-Session-ID", defaultValue = "default-session") String sessionId
-            , @RequestHeader(value = "fileId") String fileId){
+    public void deleteDocument(@RequestHeader(value = "X-Session-ID") @NotNull String sessionId
+            , @RequestHeader(value = "fileId") @NotNull String fileId){
         ragDocService.removeFile(sessionId,fileId);
-        return ResponseEntity.ok("File Deleted from current session");
-    }
-
-    @ExceptionHandler(InvalidModelProviderException.class)
-    public ResponseEntity<String> handleInvalidModel(@NonNull InvalidModelProviderException e){
-        return ResponseEntity.badRequest().body(e.getMessage());
     }
 }

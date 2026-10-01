@@ -23,9 +23,12 @@ public class ChatClientFactory {
 
     public ChatClientFactory(OpenAiChatModel openAiChatModel, GoogleGenAiChatModel googleGenAiChatModel
             , OllamaChatModel ollamaChatModel){
-        Function<ChatModel,ChatClient> function = model -> ChatClient.builder(model)
+        Function<ChatModel,ChatClient> function = model -> ChatClient
+                .builder(model)
                 .defaultSystem(SYSTEM_PROMPT)
-                .defaultAdvisors(MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
+                .defaultAdvisors(MessageChatMemoryAdvisor
+                        .builder(MessageWindowChatMemory.builder().build())
+                        .build())
                 .build();
         chatClientMap.put(ModelProvider.GEMINI,function.apply(googleGenAiChatModel));
         chatClientMap.put(ModelProvider.OPENAI,function.apply(openAiChatModel));

@@ -12,13 +12,13 @@ PAGE_CONFIG = {
 }
 
 PROVIDERS = {
-    "gemini": "Google Gemini",
-    "openai": "OpenAI ChatGPT",
-    "ollama": "Open-source Models",
+    "GEMINI": "Google Gemini",
+    "OPENAI": "OpenAI ChatGPT",
+    "OLLAMA": "Open-source Models",
 }
 
 MODELS = {
-    "gemini": [
+    "GEMINI": [
         "gemini-3.5-flash-lite",
         "gemini-3.1-flash-lite",
         "gemini-3.8-flash",
@@ -26,7 +26,7 @@ MODELS = {
         "gemini-3.6-flash",
         "gemini-3.5-flash",
     ],
-    "openai": [
+    "OPENAI": [
         "gpt-4.1-nano",
         "gpt-4.1-mini",
         "gpt-5-nano",
@@ -34,7 +34,7 @@ MODELS = {
         "gpt-5-mini",
         "gpt-5.6-terra",
     ],
-    "ollama": [
+    "OLLAMA": [
         "gemma2:2b",
         "llama3.2:3B",
         "qwen3.5:0.8b",
