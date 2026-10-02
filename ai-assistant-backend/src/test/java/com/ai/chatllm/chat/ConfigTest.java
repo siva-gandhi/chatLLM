@@ -1,4 +1,4 @@
-package com.ai.chatllm.config;
+package com.ai.chatllm.chat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;

@@ -1,9 +1,14 @@
-REDIS_HOST = "redis"
-REDIS_PORT = 6379
+import os
 
-CHAT_API_URL = "http://ai-backend:8080/api/v1/chatStream"
-FILE_UPLOAD_URL = "http://ai-backend:8080/api/v1/uploadFile"
-FILE_DELETE_URL = "http://ai-backend:8080/api/v1/deleteFile"
+
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = int(os.getenv("REDIS_PORT"))
+BACKEND_URL = os.getenv("BACKEND_URL")
+
+CHAT_API_URL = f"{BACKEND_URL}/chatStream"
+FILE_UPLOAD_URL = f"{BACKEND_URL}/uploadFile"
+FILE_DELETE_URL = f"{BACKEND_URL}/deleteFile"
+DELETE_SESSION_URL = f"{BACKEND_URL}/deleteSession"
 
 PAGE_CONFIG = {
     "page_title": "AI Assistant",

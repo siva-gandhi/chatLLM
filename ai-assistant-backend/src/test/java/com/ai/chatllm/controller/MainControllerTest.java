@@ -1,6 +1,6 @@
 package com.ai.chatllm.controller;
 
-import com.ai.chatllm.model.ChatRequest;
+import com.ai.chatllm.chat.ChatRequest;
 import com.ai.chatllm.service.ChatService;
 import com.ai.chatllm.service.RagDocService;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,5 +54,13 @@ class MainControllerTest {
     void testDeleteDocument() {
         controller.deleteDocument("session", "file");
         verify(ragDocService).removeFile("session", "file");
+    }
+
+    @Test
+    void testDeleteSession() {
+        controller.deleteSession("session",null);
+        verify(chatService).deleteSession("session");
+        controller.deleteSession(null,true);
+        verify(chatService).deleteAllSessions();
     }
 }

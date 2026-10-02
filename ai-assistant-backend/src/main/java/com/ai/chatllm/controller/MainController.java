@@ -1,10 +1,12 @@
 package com.ai.chatllm.controller;
 
-import com.ai.chatllm.model.ChatRequest;
+import com.ai.chatllm.chat.ChatRequest;
 import com.ai.chatllm.service.RagDocService;
 import com.ai.chatllm.service.ChatService;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,5 +43,14 @@ public class MainController {
     public void deleteDocument(@RequestHeader(value = "X-Session-ID") @NotNull String sessionId
             , @RequestHeader(value = "fileId") @NotNull String fileId){
         ragDocService.removeFile(sessionId,fileId);
+    }
+
+    @DeleteMapping("/deleteSession")
+    public void deleteSession(@RequestHeader(value = "X-Session-ID") @Nullable String sessionId, @RequestParam(value = "all-sessions") @Nullable Boolean allSessions){
+        if (Boolean.TRUE.equals(allSessions)){
+            chatService.deleteAllSessions();
+        } else if (StringUtils.isNotEmpty(sessionId)){
+            chatService.deleteSession(sessionId);
+        }
     }
 }

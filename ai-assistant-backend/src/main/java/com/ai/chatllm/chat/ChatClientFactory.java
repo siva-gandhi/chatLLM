@@ -1,7 +1,8 @@
-package com.ai.chatllm.config;
+package com.ai.chatllm.chat;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
@@ -22,12 +23,15 @@ public class ChatClientFactory {
     private final Map<ModelProvider,ChatClient> chatClientMap = new EnumMap<>(ModelProvider.class);
 
     public ChatClientFactory(OpenAiChatModel openAiChatModel, GoogleGenAiChatModel googleGenAiChatModel
-            , OllamaChatModel ollamaChatModel){
+            , OllamaChatModel ollamaChatModel, ChatMemoryRepository chatMemoryRepository){
         Function<ChatModel,ChatClient> function = model -> ChatClient
                 .builder(model)
                 .defaultSystem(SYSTEM_PROMPT)
                 .defaultAdvisors(MessageChatMemoryAdvisor
-                        .builder(MessageWindowChatMemory.builder().build())
+                        .builder(MessageWindowChatMemory.builder()
+                                .chatMemoryRepository(chatMemoryRepository)
+                                .maxMessages(20)
+                                .build())
                         .build())
                 .build();
         chatClientMap.put(ModelProvider.GEMINI,function.apply(googleGenAiChatModel));

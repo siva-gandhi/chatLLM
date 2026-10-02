@@ -1,4 +1,4 @@
-package com.ai.chatllm.model;
+package com.ai.chatllm.chat;
 
 import com.ai.chatllm.util.Constants.ModelProvider;
 import jakarta.validation.constraints.NotNull;

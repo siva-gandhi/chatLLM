@@ -1,4 +1,4 @@
-package com.ai.chatllm.config;
+package com.ai.chatllm.chat;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;

@@ -6,36 +6,36 @@ spring:
       pgvector:
         index-type: HNSW
         distance-type: COSINE_DISTANCE
-        dimensions: 1536
+        dimensions: ${VECTOR_DIMENSIONS}
         initialize-schema: true
     chat:
       client:
         enabled: false
+      memory:
+        repository:
+          redis:
+            host: ${REDIS_HOST}
+            port: ${REDIS_PORT}
     openai:
-      api-key: ${OPENAI_API_KEY}
+      api-key: ${OPENAI_API_KEY:}
       chat:
         options:
-          model: gpt-4.1-nano
+          model: ${OPENAI_CHAT_MODEL}
       embedding:
         options:
-          model: text-embedding-3-small
+          model: ${OPENAI_EMBEDDING_MODEL}
     google:
       genai:
         api-key: ${GOOGLE_API_KEY}
         chat:
           options:
-            model: gemini-3.5-flash-lite
+            model: ${GOOGLE_CHAT_MODEL}
     ollama:
-      base-url: http://ollama:11434
+      base-url: ${OLLAMA_BASE_URL}
       chat:
         options:
-          model: gemma2:2b
+          model: ${OLLAMA_CHAT_MODEL}
   datasource:
-    url: jdbc:postgresql://pg_vector:5432/vector_db
-    username: user
-    password: password
-  data:
-    redis:
-      host: redis
-      port: 6379
-      password: password
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
