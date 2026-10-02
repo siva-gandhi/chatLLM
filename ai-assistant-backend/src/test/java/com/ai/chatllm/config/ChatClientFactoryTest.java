@@ -3,6 +3,7 @@ package com.ai.chatllm.config;
 import com.ai.chatllm.util.Constants.ModelProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -18,6 +19,7 @@ class ChatClientFactoryTest {
         OpenAiChatModel openAi = mock(OpenAiChatModel.class);
         GoogleGenAiChatModel gemini = mock(GoogleGenAiChatModel.class);
         OllamaChatModel ollama = mock(OllamaChatModel.class);
+        ChatMemoryRepository chatMemoryRepository = mock(ChatMemoryRepository.class);
         ChatClient.Builder builder = mock(ChatClient.Builder.class);
         ChatClient client = mock(ChatClient.class);
         ChatClient.ChatClientRequestSpec request = mock(ChatClient.ChatClientRequestSpec.class);
@@ -35,7 +37,7 @@ class ChatClientFactoryTest {
             chatClient.when(() -> ChatClient.builder(gemini)).thenReturn(builder);
             chatClient.when(() -> ChatClient.builder( ollama)).thenReturn(builder);
 
-            ChatClientFactory factory = new ChatClientFactory(openAi, gemini, ollama);
+            ChatClientFactory factory = new ChatClientFactory(openAi, gemini, ollama, chatMemoryRepository);
 
             assertSame(request, factory.getChatClientForReq(ModelProvider.OPENAI, "openai-model"));
             assertSame(request, factory.getChatClientForReq(ModelProvider.GEMINI, "gemini-model"));

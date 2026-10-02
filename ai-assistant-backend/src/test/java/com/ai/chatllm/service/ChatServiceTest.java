@@ -46,7 +46,6 @@ class ChatServiceTest {
         when(call.content()).thenReturn("answer");
         assertEquals("answer", service.chat("question", ModelProvider.OPENAI, "model", "session"));
         verify(advisorSpec).param(org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID, "session");
-        verify(advisorSpec).param("chat_memory_retrieve_size", 10);
         verify(factory).getChatClientForReq(ModelProvider.OPENAI, "model");
     }
 
@@ -58,7 +57,6 @@ class ChatServiceTest {
         when(response.content()).thenReturn(stream);
         assertEquals(stream, service.chatStream("question", ModelProvider.OLLAMA, "model", "session"));
         verify(advisorSpec).param(org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID, "session");
-        verify(advisorSpec).param("chat_memory_retrieve_size", 10);
         verify(factory).getChatClientForReq(ModelProvider.OLLAMA, "model");
     }
 }

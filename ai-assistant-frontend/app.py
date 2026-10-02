@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 import redis
 import json
+from itertools import chain, zip_longest
 
 from config import (
     REDIS_HOST,
@@ -36,42 +37,60 @@ if "session_id" not in st.session_state:
 if "uploaded_files" not in st.session_state:
     st.session_state.uploaded_files = set()
 if "past_chats" not in st.session_state:
-    st.session_state.past_chats = {}  # Format: {session_id: {"title": str, "messages": list, "timestamp": str}}
+    st.session_state.past_chats = {}
+
+def _format_message(message):
+    message = message[0] if isinstance(message, list) and message else message
+    return {"role": message.get("type").lower(), "content": message.get("content")}
+
+def fetch_session_messages(session_id:str):
+    keys = []
+    for key in redis_client.scan_iter(match=f"chat-memory:{session_id}:*", count=500):
+        keys.append(key.decode())
+    keys = sorted(keys, key=lambda key_id: int(key_id.rsplit(":", 1)[1]))
+    try:
+        redis_json = redis_client.json()
+    except AttributeError as exc:
+        raise RuntimeError("RedisJSON module not found on client.") from exc
+    session_messages = [
+        _format_message(redis_json.get(key, "$"))
+        for key in keys
+    ]
+    user_messages =  [message for message in session_messages if message["role"] == "user"]
+    assistant_messages  = [message for message in session_messages if message["role"] == "assistant"]
+    return [
+        message
+        for message in chain.from_iterable(zip_longest(user_messages, assistant_messages))
+        if message is not None
+    ]
 
 
 # --- Archive & State Helpers ---
 def save_current_chat_to_history():
     """Saves the active session messages into the past_chats archive."""
     if st.session_state.messages:
-        if st.session_state.session_id in st.session_state.past_chats:
-            chat_history = st.session_state.past_chats[st.session_state.session_id]
-            if len(st.session_state.messages) == len(chat_history["messages"]):
-                return
-            chat_history.update({
-                "messages": list(st.session_state.messages),
-                "timestamp": datetime.now().strftime("%b %d, %H:%M:%S")
-            })
-        else:
+        if st.session_state.session_id not in st.session_state.past_chats:
             first_user_msg = next((m["content"] for m in st.session_state.messages if m["role"] == "user"), "Conversation")
             title = (first_user_msg[:32] + "...") if len(first_user_msg) > 32 else first_user_msg
-            provider = st.session_state.selected_provider
             chat_history = {
                 "id": st.session_state.session_id,
                 "title": title,
-                "messages": list(st.session_state.messages),
-                "timestamp": datetime.now().strftime("%b %d, %H:%M:%S"),
-                "provider" : provider
+                "timestamp": datetime.now().astimezone().strftime("%b %d, %H:%M:%S"),
+                "provider" : st.session_state.selected_provider
             }
             st.session_state.past_chats[st.session_state.session_id] = chat_history
+        else:
+            chat_history = st.session_state.past_chats[st.session_state.session_id]
+            chat_history.update({
+                "timestamp": datetime.now().strftime("%b %d, %H:%M:%S")
+            })
         redis_client.hset("chat_history", st.session_state.session_id, json.dumps(chat_history))
+        st.rerun()
 
 def session_reset():
     """Archives current context, cleans backend files, and initializes a new session."""
-    save_current_chat_to_history()
-
     for file_id in st.session_state.uploaded_files:
         delete_file_from_backend(st.session_state.session_id, file_id)
-
     st.session_state.messages = []
     st.session_state.session_id = str(uuid.uuid4())
     st.session_state.uploaded_files = set()
@@ -79,12 +98,11 @@ def session_reset():
 
 def load_chat(target_session_id: str):
     """Saves current state and switches to an archived session."""
-    save_current_chat_to_history()
 
     target_chat = st.session_state.past_chats.get(target_session_id)
     if target_chat:
         st.session_state.session_id = target_chat["id"]
-        st.session_state.messages = list(target_chat["messages"])
+        st.session_state.messages = fetch_session_messages(st.session_state.session_id)
         st.session_state.uploaded_files = set()
         st.session_state.selected_provider = target_chat["provider"]
 
